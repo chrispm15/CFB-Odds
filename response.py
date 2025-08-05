@@ -2,7 +2,7 @@ from data import get_team_games, get_game_odds
 from dotenv import load_dotenv
 load_dotenv()
 
-prefProvider = "Bovada"
+prefProvider = "ESPN Bet"
 async def build_odds_response(raw_input):
     if ',' in raw_input:
         try:
