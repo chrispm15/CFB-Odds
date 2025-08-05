@@ -10,7 +10,6 @@ async def build_odds_response(raw_input):
 
             games = await get_team_games(team1)
             game = next((g for g in games if g["homeTeam"] == team2 or g["awayTeam"] == team2), None)
-
             if not game:
                 return f"❌ Couldn't find a 2025 game between {team1} and {team2}."
 
@@ -22,6 +21,18 @@ async def build_odds_response(raw_input):
             lines_list = odds_data[0]["lines"] if odds_data and "lines" in odds_data[0] else []
             if not lines_list:
                 return f"✅ Found game: {game['awayTeam']} @ {game['homeTeam']}, but no valid lines yet."
+            # Check for conflicting favorites
+            favorites = []
+            for line in lines_list:
+                home_ml = line.get("homeMoneyline")
+                away_ml = line.get("awayMoneyline")
+                if home_ml is not None and away_ml is not None:
+                    favorites.append("home" if home_ml < away_ml else "away")
+
+            if len(set(favorites)) > 1:
+                conflict_warning = "⚠️ Books disagree on favorite\n"
+            else:
+                conflict_warning = None
 
             # Grab preferred line
             selected_line = next((l for l in lines_list if l.get("provider") == prefProvider), lines_list[0])
@@ -33,14 +44,15 @@ async def build_odds_response(raw_input):
             over_under = selected_line.get("overUnder")
             home_ml = selected_line.get("homeMoneyline")
             away_ml = selected_line.get("awayMoneyline")
-
             date = game.get("startDate", "")[:10]
             home = game.get("homeTeam")
             away = game.get("awayTeam")
 
             msg = f"```"
             msg += f"{away} @ {home} - {date}\n"
-            msg += f"Source: {provider}\n"
+            msg += f"Book: {provider}\n"
+            if conflict_warning:
+                msg += f"{conflict_warning}"
             msg += "\n"
             if spread is not None:
                 if spread_team:
@@ -67,6 +79,7 @@ async def build_odds_response(raw_input):
         except:
             msg = "Usage limits hit, try again later."
             return msg
+
     else:
         # Handle team-only: show all games with odds
         team = raw_input.strip().title()
@@ -93,7 +106,18 @@ async def build_odds_response(raw_input):
                 lines_list = odds_data[0]["lines"] if odds_data and "lines" in odds_data[0] else []
                 if not lines_list:
                     continue
+                # Check for conflicting favorites
+                favorites = []
+                for line in lines_list:
+                    home_ml = line.get("homeMoneyline")
+                    away_ml = line.get("awayMoneyline")
+                    if home_ml is not None and away_ml is not None:
+                        favorites.append("home" if home_ml < away_ml else "away")
 
+                if len(set(favorites)) > 1:
+                    conflict_warning = "  ⚠️ Books disagree on favorite"
+                else:
+                    conflict_warning = None
                 selected_line = next((l for l in lines_list if l.get("provider") == prefProvider), lines_list[0])
 
                 provider = selected_line.get("provider", "Unknown")
@@ -106,6 +130,8 @@ async def build_odds_response(raw_input):
                 matchup = f"• {away} @ {home} — {date}"
                 details = []
                 details.append(f"Book: {provider}")
+                if conflict_warning:
+                    details.append(conflict_warning)
                 if spread is not None:
                     if spread_team:
                         details.append(f"  Spread: {spread_team} {spread:+}")
@@ -128,5 +154,3 @@ async def build_odds_response(raw_input):
             return msg
 
         return "```\n" + "\n\n".join(lines) + "\n```"
-
-
