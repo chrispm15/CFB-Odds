@@ -1,5 +1,6 @@
 from data import get_team_games, get_game_odds
 from dotenv import load_dotenv
+from datetime import datetime, timezone, timedelta
 load_dotenv()
 
 prefProvider = "ESPN Bet"
@@ -14,8 +15,6 @@ async def build_odds_response(raw_input: str):
     """
     raw = (raw_input or "").strip()
 
-    # ---------- Helper(s) ----------
-    from datetime import datetime, timezone
 
     def _parse_dt(iso_str):
         """Parse startDate ISO strings; treat naive as UTC."""
@@ -117,7 +116,7 @@ async def build_odds_response(raw_input: str):
 
         if not wants_all:
             # Upcoming only
-            now = datetime.now(timezone.utc)
+            now = datetime.now(timezone.utc) - timedelta(hours=24)
             future_games = [g for g in games if _parse_dt(g.get("startDate")) and _parse_dt(g.get("startDate")) >= now]
             game = min(future_games, key=lambda g: _parse_dt(g.get("startDate"))) if future_games else None
             if not game:
