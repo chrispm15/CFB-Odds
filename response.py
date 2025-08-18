@@ -116,8 +116,8 @@ async def build_odds_response(raw_input: str):
 
         if not wants_all:
             # Upcoming only
-            now = datetime.now(timezone.utc) - timedelta(hours=24)
-            future_games = [g for g in games if _parse_dt(g.get("startDate")) and _parse_dt(g.get("startDate")) >= now]
+            now = datetime.now(timezone.utc)
+            future_games = [g for g in games if _parse_dt(g.get("startDate")) and _parse_dt(g.get("startDate")) >= now - timedelta(hours=24)]
             game = min(future_games, key=lambda g: _parse_dt(g.get("startDate"))) if future_games else None
             if not game:
                 return f"✅ No upcoming game for {team}."
